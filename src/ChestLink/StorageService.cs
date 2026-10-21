@@ -11,7 +11,7 @@ internal sealed class StorageService(ModEntry mod)
     private const int WarnAfterTicks = 600;
     private const int MaxCachedResults = 32;
     private PendingTransfer? pending;
-    private readonly Dictionary<long, Dictionary<string, Item>> remoteItems = new();
+    private readonly Dictionary<long, Dictionary<string, RemoteItemKey>> remoteItems = new();
     private readonly HashSet<string> appliedRequestIds = new();
     private readonly Queue<string> appliedRequestOrder = new();
     private readonly Dictionary<long, RequestResultCache> hostResults = new();
@@ -38,6 +38,7 @@ internal sealed class StorageService(ModEntry mod)
                 RequestId = Guid.NewGuid().ToString("N"),
                 Action = slot.InStorage ? "withdraw" : "deposit",
                 ItemKey = slot.RemoteKey,
+                ContainerKind = slot.ContainerKind,
                 Count = requested,
             };
             var localItems = new List<PendingItem>();
@@ -91,16 +92,16 @@ internal sealed class StorageService(ModEntry mod)
             $"{slot.Item.QualifiedItemId} x{requested}", LogLevel.Trace);
         Execute(model, catalog =>
         {
-            var matchingSources = catalog.FindGroups(slot.Item)
-                .SelectMany(group => group.Sources).ToList();
+            var matchingSources = catalog.FindSources(slot.Item, slot.ContainerKind).ToList();
             if (slot.InStorage && matchingSources.Count > 0 &&
                 matchingSources.All(source => !CanUse(source.Chest)))
                 return mod.T("status.chest-busy");
-            var destinations = catalog.Chests.Where(CanUse).ToList();
-            if (!slot.InStorage && destinations.Count == 0 && catalog.Chests.Count > 0)
+            var selectedChests = catalog.ViewChests(slot.ContainerKind).ToList();
+            var destinations = selectedChests.Where(CanUse).ToList();
+            if (!slot.InStorage && destinations.Count == 0 && selectedChests.Count > 0)
                 return mod.T("status.chest-busy");
             int moved = slot.InStorage
-                ? Withdraw(catalog, Game1.player, slot.Item, requested)
+                ? Withdraw(catalog, Game1.player, slot.Item, requested, slot.ContainerKind)
                 : Deposit(catalog, Game1.player, slot.BackpackIndex, slot.Item, requested, destinations);
             mod.LogInteraction($"transfer result: moved={moved}, item={slot.Item.QualifiedItemId}");
             if (moved > 0) Game1.playSound(slot.InStorage ? "coin" : "dwop");
@@ -127,7 +128,8 @@ internal sealed class StorageService(ModEntry mod)
         Execute(model, catalog =>
         {
             var transfers = new List<(ChestSource Chest, Item Item)>();
-            int total = QuickStack(catalog, Game1.player, transfers);
+            int total = QuickStack(catalog, Game1.player, transfers,
+                kind: model?.SelectedContainerKind ?? StorageContainerKind.All);
             if (total > 0)
             {
                 Game1.playSound("Ship");
@@ -254,14 +256,17 @@ internal sealed class StorageService(ModEntry mod)
                 {
                     case "withdraw":
                         bool hasPlayerKeys = remoteItems.TryGetValue(playerId, out var keyMap);
-                        Item? withdrawExemplar = null;
-                        bool keyFound = hasPlayerKeys && keyMap!.TryGetValue(request.ItemKey, out withdrawExemplar);
+                        RemoteItemKey? mapped = null;
+                        bool keyFound = hasPlayerKeys &&
+                            keyMap!.TryGetValue(request.ItemKey, out mapped) &&
+                            mapped.Kind == request.ContainerKind;
                         if (keyFound)
                         {
-                            var matching = catalog.FindGroups(withdrawExemplar!)
-                                .SelectMany(group => group.Sources).ToList();
+                            Item withdrawExemplar = mapped!.Item;
+                            var matching = catalog.FindSources(withdrawExemplar,
+                                request.ContainerKind).ToList();
                             int available = matching.Sum(source => source.Item.Stack);
-                            mod.LogInteraction($"host withdraw lookup: item={withdrawExemplar!.QualifiedItemId}, " +
+                            mod.LogInteraction($"host withdraw lookup: item={withdrawExemplar.QualifiedItemId}, " +
                                 $"key={request.ItemKey}, keyFound=true, keys={keyMap!.Count}, " +
                                 $"sources={matching.Count}, available={available}, requested={request.Count}");
                             if (matching.Count > 0 && matching.All(source => !CanUse(source.Chest)))
@@ -285,7 +290,8 @@ internal sealed class StorageService(ModEntry mod)
                         }
                         break;
                     case "deposit":
-                        if (catalog.Chests.Count > 0 && catalog.Chests.All(chest => !CanUse(chest)))
+                        var selectedChests = catalog.ViewChests(request.ContainerKind).ToList();
+                        if (selectedChests.Count > 0 && selectedChests.All(chest => !CanUse(chest)))
                             result.Status = mod.T("status.chest-busy");
                         else
                         {
@@ -457,7 +463,12 @@ internal sealed class StorageService(ModEntry mod)
     private void SubmitRemoteQuickStack(StorageMenuModel? model, bool useNearbyChests = false)
     {
         var request = new StorageRequest
-            { RequestId = Guid.NewGuid().ToString("N"), Action = useNearbyChests ? "quick-stack-nearby" : "quick-stack" };
+            {
+                RequestId = Guid.NewGuid().ToString("N"),
+                Action = useNearbyChests ? "quick-stack-nearby" : "quick-stack",
+                ContainerKind = useNearbyChests ? StorageContainerKind.All :
+                    model?.SelectedContainerKind ?? StorageContainerKind.All
+            };
         var localItems = new List<PendingItem>();
         var deductions = new List<(int Slot, Item Before, Item? After)>();
         try
@@ -500,9 +511,10 @@ internal sealed class StorageService(ModEntry mod)
         moved = 0;
         if (request.Count <= 0 || request.Count > 999 ||
             !remoteItems.TryGetValue(playerId, out var items) ||
-            !items.TryGetValue(request.ItemKey, out Item? exemplar)) return new();
-        var sources = catalog.FindGroups(exemplar)
-            .SelectMany(group => group.Sources).Where(source => CanUse(source.Chest)).ToList();
+            !items.TryGetValue(request.ItemKey, out RemoteItemKey? mapped) ||
+            mapped.Kind != request.ContainerKind) return new();
+        var sources = catalog.FindSources(mapped.Item, request.ContainerKind)
+            .Where(source => CanUse(source.Chest)).ToList();
         var planned = new List<(ItemSource Source, int Count)>();
         int remaining = request.Count;
         foreach (ItemSource source in sources)
@@ -543,7 +555,7 @@ internal sealed class StorageService(ModEntry mod)
             if (item.Stack != entry.Count) { accepted.Add(0); continue; }
             var reached = new List<ChestSource>();
             int moved = StoreItem(catalog, item, entry.Count,
-                catalog.Chests.Where(CanUse).ToList(), reached);
+                catalog.ViewChests(request.ContainerKind).Where(CanUse).ToList(), reached);
             accepted.Add(moved);
             if (moved > 0)
                 foreach (ChestSource chest in reached) transfers.Add((chest, item));
@@ -562,8 +574,8 @@ internal sealed class StorageService(ModEntry mod)
                 if (entry.Count <= 0 || entry.Count > 999) { accepted.Add(0); continue; }
                 Item item = ItemNetCodec.Decode(entry.ItemData);
                 if (item.Stack != entry.Count || !IsQuickStackItem(item)) { accepted.Add(0); continue; }
-                var matching = catalog.OrderChests(catalog.FindGroups(item)
-                    .SelectMany(group => group.Sources.Select(source => source.Chest))
+                var matching = catalog.OrderChests(catalog.FindSources(item, request.ContainerKind)
+                    .Select(source => source.Chest)
                     .Where(source => CanUse(source) &&
                         (allowedChests is null || allowedChests.Contains(source.Chest)))).ToList();
                 var reached = new List<ChestSource>();
@@ -600,33 +612,48 @@ internal sealed class StorageService(ModEntry mod)
             OccupiedSlots = catalog.OccupiedSlots,
             TotalSlots = catalog.TotalSlots
         };
-        var keyMap = new Dictionary<string, Item>();
-        remoteItems.TryGetValue(playerId, out Dictionary<string, Item>? previousKeys);
-        Dictionary<(string Id, int Quality), List<KeyValuePair<string, Item>>>? previousByItem = null;
+        var keyMap = new Dictionary<string, RemoteItemKey>();
+        remoteItems.TryGetValue(playerId, out Dictionary<string, RemoteItemKey>? previousKeys);
+        Dictionary<(string Id, int Quality, StorageContainerKind Kind),
+            List<KeyValuePair<string, RemoteItemKey>>>? previousByItem = null;
         if (previousKeys is not null)
             previousByItem = previousKeys
-                .GroupBy(entry => (entry.Value.QualifiedItemId, entry.Value.Quality))
+                .GroupBy(entry => (entry.Value.Item.QualifiedItemId,
+                    entry.Value.Item.Quality, entry.Value.Kind))
                 .ToDictionary(group => group.Key, group => group.ToList());
-        foreach (ItemGroup group in catalog.Groups)
+        foreach (StorageContainerKind kind in Enum.GetValues<StorageContainerKind>())
         {
-            string key = Guid.NewGuid().ToString("N");
-            if (previousByItem is not null && previousByItem.TryGetValue(
-                (group.Exemplar.QualifiedItemId, group.Exemplar.Quality),
-                out List<KeyValuePair<string, Item>>? candidates))
+            var chests = catalog.ViewChests(kind).ToList();
+            snapshot.Containers.Add(new StorageContainerStats
             {
-                KeyValuePair<string, Item> previous = candidates.FirstOrDefault(entry =>
-                    ChestCatalog.SameStack(entry.Value, group.Exemplar));
-                if (!string.IsNullOrEmpty(previous.Key)) key = previous.Key;
-            }
-            keyMap[key] = group.Exemplar;
-            snapshot.Items.Add(new StorageSnapshotItem
-            {
-                Key = key,
-                QualifiedItemId = group.Exemplar.QualifiedItemId,
-                Quality = group.Exemplar.Quality,
-                Count = group.Total,
-                PreservedItemId = (group.Exemplar as SObject)?.preservedParentSheetIndex.Value
+                Kind = kind,
+                Count = chests.Count,
+                OccupiedSlots = chests.Sum(source =>
+                    source.Chest.Items.Count(item => item is { Stack: > 0 })),
+                TotalSlots = chests.Sum(source => source.Chest.GetActualCapacity())
             });
+            foreach ((ItemGroup group, int count) in catalog.ViewGroups(kind))
+            {
+                string key = Guid.NewGuid().ToString("N");
+                if (previousByItem is not null && previousByItem.TryGetValue(
+                    (group.Exemplar.QualifiedItemId, group.Exemplar.Quality, kind),
+                    out List<KeyValuePair<string, RemoteItemKey>>? candidates))
+                {
+                    KeyValuePair<string, RemoteItemKey> previous = candidates.FirstOrDefault(entry =>
+                        ChestCatalog.SameStack(entry.Value.Item, group.Exemplar));
+                    if (!string.IsNullOrEmpty(previous.Key)) key = previous.Key;
+                }
+                keyMap[key] = new RemoteItemKey(group.Exemplar, kind);
+                snapshot.Items.Add(new StorageSnapshotItem
+                {
+                    Key = key,
+                    ContainerKind = kind,
+                    QualifiedItemId = group.Exemplar.QualifiedItemId,
+                    Quality = group.Exemplar.Quality,
+                    Count = count,
+                    PreservedItemId = (group.Exemplar as SObject)?.preservedParentSheetIndex.Value
+                });
+            }
         }
         remoteItems[playerId] = keyMap;
         return snapshot;
@@ -757,10 +784,12 @@ internal sealed class StorageService(ModEntry mod)
     }
 
     private sealed record PendingItem(Item Item, int Count);
+    private sealed record RemoteItemKey(Item Item, StorageContainerKind Kind);
 
     private static int QuickStack(ChestCatalog catalog, Farmer player,
         List<(ChestSource Chest, Item Item)> transfers, HashSet<int>? excludedSlots = null,
-        HashSet<StardewValley.Objects.Chest>? allowedChests = null)
+        HashSet<StardewValley.Objects.Chest>? allowedChests = null,
+        StorageContainerKind kind = StorageContainerKind.All)
     {
         var eligible = catalog.Groups.Where(group => IsQuickStackItem(group.Exemplar))
             .ToLookup(group => group.Exemplar.QualifiedItemId);
@@ -773,6 +802,7 @@ internal sealed class StorageService(ModEntry mod)
             var matching = catalog.OrderChests(eligible[item.QualifiedItemId]
                 .Where(entry => ChestCatalog.SameStack(entry.Exemplar, item))
                 .SelectMany(entry => entry.Sources.Select(source => source.Chest))
+                .Where(source => source.Matches(kind))
                 .Where(source => CanUse(source) &&
                     (allowedChests is null || allowedChests.Contains(source.Chest)))).ToList();
             if (matching.Count == 0) continue;
@@ -912,10 +942,11 @@ internal sealed class StorageService(ModEntry mod)
     private static bool IsQuickStackAction(string action) =>
         action is "quick-stack" or "quick-stack-nearby";
 
-    private int Withdraw(ChestCatalog catalog, Farmer player, Item exemplar, int requested)
+    private int Withdraw(ChestCatalog catalog, Farmer player, Item exemplar, int requested,
+        StorageContainerKind kind)
     {
-        var sources = catalog.FindGroups(exemplar)
-            .SelectMany(group => group.Sources).Where(source => CanUse(source.Chest)).ToList();
+        var sources = catalog.FindSources(exemplar, kind)
+            .Where(source => CanUse(source.Chest)).ToList();
         int available = sources.Sum(source => source.Item.Stack);
         int capacity = Capacity(player.Items, player.MaxItems, exemplar);
         int amount = Math.Min(requested, Math.Min(available, capacity));

@@ -1,7 +1,7 @@
 {
   "Name": "ChestLink",
   "Author": "ZeroAlex",
-  "Version": "0.4.63",
+  "Version": "0.4.64",
   "Description": "A shared view of chests and fridges through a vanilla-style storage terminal.",
   "UniqueID": "Nooobad.ChestLink",
   "EntryDll": "ChestLink.dll",

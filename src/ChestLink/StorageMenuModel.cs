@@ -11,14 +11,18 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
     private const int PageSize = 60;
     private readonly ModEntry mod;
     private ChestCatalog? catalog;
-    private List<(Item Exemplar, int Count, string Key)> remoteGroups = new();
+    private List<(Item Exemplar, int Count, string Key, StorageContainerKind Kind)> remoteGroups = new();
+    private List<StorageContainerStats> remoteContainers = new();
     private int page;
     private string category = "farming";
+    private StorageContainerKind containerKind = StorageContainerKind.All;
     private string searchText = "";
     internal string SelectedCategory => category;
+    internal StorageContainerKind SelectedContainerKind => containerKind;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public List<CategoryTab> Categories { get; }
+    internal List<ContainerTab> Containers { get; }
     public List<StorageSlot> StorageSlots { get; private set; } = new();
     public List<StorageSlot> BackpackSlots { get; private set; } = new();
     public string SearchText => searchText;
@@ -47,6 +51,22 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
             ("clothing", "(H)0"), ("other", "(O)167")
         }.Select(pair => new CategoryTab(this, pair.Item1,
             pair.Item2.Length > 0 ? ItemRegistry.GetData(pair.Item2) : null)).ToList();
+        Containers = new[]
+        {
+            (StorageContainerKind.All, ""),
+            (StorageContainerKind.Chest, "(BC)130"),
+            (StorageContainerKind.Fridge, "(BC)216")
+        }.Select(pair => new ContainerTab(this, pair.Item1,
+            pair.Item2.Length > 0 ? ItemRegistry.GetData(pair.Item2) : null)).ToList();
+        Refresh();
+    }
+
+    internal void SelectContainer(StorageContainerKind kind)
+    {
+        if (containerKind == kind) return;
+        containerKind = kind;
+        page = 0;
+        foreach (ContainerTab tab in Containers) tab.NotifySelectionChanged();
         Refresh();
     }
 
@@ -87,7 +107,7 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
                 item.Quality = entry.Quality;
                 if (item is SObject obj && entry.PreservedItemId is not null)
                     obj.preservedParentSheetIndex.Value = entry.PreservedItemId;
-                remoteGroups.Add((item, entry.Count, entry.Key));
+                remoteGroups.Add((item, entry.Count, entry.Key, entry.ContainerKind));
             }
             catch (Exception error)
             {
@@ -95,9 +115,7 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
                     StardewModdingAPI.LogLevel.Warn);
             }
         }
-        ChestCount = snapshot.ChestCount;
-        OccupiedChestSlots = snapshot.OccupiedSlots;
-        TotalChestSlots = snapshot.TotalSlots;
+        remoteContainers = snapshot.Containers;
         Refresh();
     }
 
@@ -108,13 +126,25 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
             catalog = currentCatalog = mod.GetStorageCatalog();
         if (Context.IsMainPlayer)
         {
-            ChestCount = currentCatalog!.Chests.Count;
-            OccupiedChestSlots = currentCatalog.OccupiedSlots;
-            TotalChestSlots = currentCatalog.TotalSlots;
+            var chests = currentCatalog!.ViewChests(containerKind).ToList();
+            ChestCount = chests.Count;
+            OccupiedChestSlots = chests.Sum(source =>
+                source.Chest.Items.Count(item => item is { Stack: > 0 }));
+            TotalChestSlots = chests.Sum(source => source.Chest.GetActualCapacity());
+        }
+        else
+        {
+            StorageContainerStats? stats = remoteContainers.FirstOrDefault(entry =>
+                entry.Kind == containerKind);
+            ChestCount = stats?.Count ?? 0;
+            OccupiedChestSlots = stats?.OccupiedSlots ?? 0;
+            TotalChestSlots = stats?.TotalSlots ?? 0;
         }
         var groups = Context.IsMainPlayer
-            ? currentCatalog!.Groups.Select(group => (group.Exemplar, Count: group.Total, Key: ""))
-            : remoteGroups.AsEnumerable();
+            ? currentCatalog!.ViewGroups(containerKind).Select(entry =>
+                (entry.Group.Exemplar, entry.Count, Key: ""))
+            : remoteGroups.Where(entry => entry.Kind == containerKind)
+                .Select(entry => (entry.Exemplar, entry.Count, entry.Key));
         var matching = groups.Where(group => searchText.Length > 0
                 ? group.Exemplar.DisplayName.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
                 : CategoryOf(group.Exemplar) == category).ToList();
@@ -140,14 +170,16 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
         PageNumber = page + 1;
         PageCount = pages;
         StorageSlots = virtualStacks.Skip(page * PageSize).Take(PageSize)
-            .Select(entry => new StorageSlot(this, entry.Item, entry.Count, true, remoteKey: entry.Key)).ToList();
+            .Select(entry => new StorageSlot(this, entry.Item, entry.Count, true,
+                remoteKey: entry.Key, containerKind: containerKind)).ToList();
         while (StorageSlots.Count < PageSize)
-            StorageSlots.Add(new StorageSlot(this, null, 0, true));
+            StorageSlots.Add(new StorageSlot(this, null, 0, true, containerKind: containerKind));
         BackpackSlots = new List<StorageSlot>();
         for (int i = 0; i < Game1.player.MaxItems; i++)
         {
             Item? item = i < Game1.player.Items.Count ? Game1.player.Items[i] : null;
-            BackpackSlots.Add(new StorageSlot(this, item, item?.Stack ?? 0, false, i));
+            BackpackSlots.Add(new StorageSlot(this, item, item?.Stack ?? 0, false, i,
+                containerKind: containerKind));
         }
         Changed(nameof(StorageSlots)); Changed(nameof(BackpackSlots));
         Changed(nameof(OccupiedChestSlots)); Changed(nameof(TotalChestSlots)); Changed(nameof(ChestCount));
@@ -193,14 +225,28 @@ public sealed class CategoryTab(StorageMenuModel model, string key, ParsedItemDa
     }
 }
 
+internal sealed class ContainerTab(StorageMenuModel model, StorageContainerKind kind,
+    ParsedItemData? icon) : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+    internal StorageContainerKind Kind { get; } = kind;
+    internal string Name => model.T("container." + Kind.ToString().ToLowerInvariant());
+    internal ParsedItemData? Icon { get; } = icon;
+    internal bool IsSelected => model.SelectedContainerKind == Kind;
+    internal void Select() => model.SelectContainer(Kind);
+    internal void NotifySelectionChanged() => PropertyChanged?.Invoke(this, new(nameof(IsSelected)));
+}
+
 public sealed class StorageSlot(StorageMenuModel model, Item? item, int count, bool inStorage,
-    int backpackIndex = -1, string remoteKey = "")
+    int backpackIndex = -1, string remoteKey = "",
+    StorageContainerKind containerKind = StorageContainerKind.All)
 {
     public Item? Item { get; } = item;
     public int Count { get; } = count;
     public bool InStorage { get; } = inStorage;
     public int BackpackIndex { get; } = backpackIndex;
     internal string RemoteKey { get; } = remoteKey;
+    internal StorageContainerKind ContainerKind { get; } = containerKind;
     public ParsedItemData? Sprite => Item is null ? null : ItemRegistry.GetData(Item.QualifiedItemId);
     public bool HasItem => Item is not null;
     public bool HasSource => SourceSprite is not null;

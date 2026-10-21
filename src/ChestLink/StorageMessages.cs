@@ -6,6 +6,7 @@ internal sealed class StorageRequest
     public string RequestId { get; set; } = "";
     public string Action { get; set; } = "";
     public string ItemKey { get; set; } = "";
+    public StorageContainerKind ContainerKind { get; set; }
     public int Count { get; set; }
     public List<StorageRequestItem> Items { get; set; } = new();
 }
@@ -39,7 +40,16 @@ internal sealed class StorageSnapshot
     public int ChestCount { get; set; }
     public int OccupiedSlots { get; set; }
     public int TotalSlots { get; set; }
+    public List<StorageContainerStats> Containers { get; set; } = new();
     public List<StorageSnapshotItem> Items { get; set; } = new();
+}
+
+internal sealed class StorageContainerStats
+{
+    public StorageContainerKind Kind { get; set; }
+    public int Count { get; set; }
+    public int OccupiedSlots { get; set; }
+    public int TotalSlots { get; set; }
 }
 
 internal sealed class StorageSnapshotReply
@@ -59,6 +69,7 @@ internal sealed class StorageSnapshotRequest
 internal sealed class StorageSnapshotItem
 {
     public string Key { get; set; } = "";
+    public StorageContainerKind ContainerKind { get; set; }
     public string QualifiedItemId { get; set; } = "";
     public int Quality { get; set; }
     public int Count { get; set; }

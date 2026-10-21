@@ -16,6 +16,8 @@
 - 多人游戏中同步仓库操作和打开中的仓库界面。所有玩家都需要安装 ChestLink。
 - 界面文字和终端配方名称会跟随游戏语言；缺少翻译时使用英文。
 
+仓库左侧的 **全部容器 / 箱子 / 冰箱** 页签与顶部物品分类组合使用。例如“箱子 + 农作物”只显示箱子里的农作物；“全部容器 + 农作物”显示箱子和冰箱里的农作物。出货箱不在仓库范围内。
+
 ### 安装
 
 1. 安装 [SMAPI](https://smapi.io/)，并启动一次游戏。
@@ -68,6 +70,8 @@ dotnet build src/ChestLink/ChestLink.csproj -c Release
 - Lock backpack items to skip them during quick storage. Lock icons also appear in the toolbar.
 - Multiplayer storage actions and open storage views are synchronized. Every player should install ChestLink.
 - The mod follows the game's language for its UI and recipe name, with English as the fallback.
+
+The **All containers / Chests / Fridges** tabs on the left combine with the item categories along the top. For example, Chests + Crops shows crops stored in chests; All containers + Crops includes chests and fridges. Shipping bins are excluded.
 
 ### Installation
 

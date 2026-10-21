@@ -29,6 +29,7 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
     private int hoveredStorage = -1;
     private int hoveredBackpack = -1;
     private int hoveredCategory = -1;
+    private int hoveredContainer = -1;
     private string hoveredAction = "";
     private bool communityItemWasHovered;
     private int pressedBackpackIndex = -1;
@@ -70,6 +71,10 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
     private Rectangle TabBounds(int index, bool selected) =>
         new Rectangle(xPositionOnScreen + 28 + index * TabStep,
             yPositionOnScreen - TabHeight + (selected ? SelectedTabShift : 0), TabWidth, TabHeight);
+
+    private Rectangle ContainerTabBounds(int index, bool selected) =>
+        new Rectangle(xPositionOnScreen - 56 + (selected ? SelectedTabShift : 0),
+            yPositionOnScreen + 120 + index * (TabHeight + 8), TabWidth, TabHeight);
 
     private Rectangle ClearSearchBounds() => new(searchBox.X + searchBox.Width - 44,
         searchBox.Y + 4, 40, 40);
@@ -206,6 +211,13 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
             return;
         }
         EnsureInventories();
+        for (int i = 0; i < model.Containers.Count; i++)
+        {
+            if (!ContainerTabBounds(i, model.Containers[i].IsSelected).Contains(x, y)) continue;
+            model.Containers[i].Select();
+            Game1.playSound("smallSelect");
+            return;
+        }
         for (int i = 0; i < model.Categories.Count; i++)
         {
             if (!TabBounds(i, model.Categories[i].IsSelected).Contains(x, y)) continue;
@@ -406,7 +418,11 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
         hoveredBackpack = SlotAt(backpackInventory, x, y);
         UpdateHoveredItemForExternalTooltip();
         hoveredCategory = -1;
+        hoveredContainer = -1;
         hoveredAction = "";
+        for (int i = 0; i < model.Containers.Count; i++)
+            if (ContainerTabBounds(i, model.Containers[i].IsSelected).Contains(x, y))
+            { hoveredContainer = i; break; }
         for (int i = 0; i < model.Categories.Count; i++)
             if (TabBounds(i, model.Categories[i].IsSelected).Contains(x, y)) { hoveredCategory = i; break; }
         for (int i = 0; i < actionButtons.Length; i++)
@@ -492,6 +508,8 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
             Color.Black * 0.5f);
         for (int i = 0; i < model.Categories.Count; i++)
             if (!model.Categories[i].IsSelected) DrawTab(b, i, false);
+        for (int i = 0; i < model.Containers.Count; i++)
+            if (!model.Containers[i].IsSelected) DrawContainerTab(b, i, false);
 
         drawTextureBox(b, xPositionOnScreen, yPositionOnScreen, width, 492, Color.White);
         drawTextureBox(b, xPositionOnScreen, yPositionOnScreen + BackpackPanelTop,
@@ -516,6 +534,8 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
 
         for (int i = 0; i < model.Categories.Count; i++)
             if (model.Categories[i].IsSelected) DrawTab(b, i, true);
+        for (int i = 0; i < model.Containers.Count; i++)
+            if (model.Containers[i].IsSelected) DrawContainerTab(b, i, true);
         DrawActions(b);
         DrawHover(b);
         DrawDraggedItem(b);
@@ -539,6 +559,50 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
             b.Draw(icon.GetTexture(), new Rectangle(bounds.Center.X - iconWidth / 2,
                 bounds.Center.Y - iconHeight / 2, iconWidth, iconHeight), source, Color.White);
         }
+    }
+
+    private void DrawContainerTab(SpriteBatch b, int index, bool selected)
+    {
+        Rectangle bounds = ContainerTabBounds(index, selected);
+        b.Draw(Game1.mouseCursors, new Vector2(bounds.X, bounds.Y),
+            new Rectangle(16, 368, 16, 16), Color.White,
+            0f, Vector2.Zero, 4f, SpriteEffects.None, 0f);
+        if (model.Containers[index].Kind == StorageContainerKind.All)
+        {
+            DrawContainerIcon(b, model.Containers[1].Icon,
+                new Rectangle(bounds.X + 6, bounds.Y + 7, 34, 34));
+            if (!DrawContainerIcon(b, model.Containers[2].Icon,
+                new Rectangle(bounds.X + 26, bounds.Y + 26, 34, 34)))
+                DrawContainerLabel(b, model.Containers[2].Name,
+                    new Rectangle(bounds.X + 26, bounds.Y + 26, 34, 34));
+        }
+        else if (!DrawContainerIcon(b, model.Containers[index].Icon,
+            new Rectangle(bounds.X + 10, bounds.Y + 10, 44, 44)))
+            DrawContainerLabel(b, model.Containers[index].Name,
+                new Rectangle(bounds.X + 10, bounds.Y + 10, 44, 44));
+    }
+
+    private static bool DrawContainerIcon(SpriteBatch b,
+        StardewValley.ItemTypeDefinitions.ParsedItemData? icon, Rectangle area)
+    {
+        if (icon is null) return false;
+        Rectangle source = icon.GetSourceRect();
+        float scale = Math.Min((float)area.Width / source.Width,
+            (float)area.Height / source.Height);
+        int width = (int)Math.Round(source.Width * scale);
+        int height = (int)Math.Round(source.Height * scale);
+        b.Draw(icon.GetTexture(), new Rectangle(area.Center.X - width / 2,
+            area.Center.Y - height / 2, width, height), source, Color.White);
+        return true;
+    }
+
+    private static void DrawContainerLabel(SpriteBatch b, string label, Rectangle area)
+    {
+        string initial = label.Length > 0 ? label[..1] : "?";
+        Vector2 size = Game1.smallFont.MeasureString(initial);
+        b.DrawString(Game1.smallFont, initial,
+            new Vector2(area.Center.X - size.X / 2, area.Center.Y - size.Y / 2),
+            Game1.textColor);
     }
 
     private void DrawDraggedItem(SpriteBatch b)
@@ -617,6 +681,11 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
 
     private void DrawHover(SpriteBatch b)
     {
+        if (hoveredContainer >= 0)
+        {
+            drawHoverText(b, model.Containers[hoveredContainer].Name, Game1.smallFont);
+            return;
+        }
         if (hoveredCategory >= 0)
         {
             drawHoverText(b, model.Categories[hoveredCategory].Name, Game1.smallFont);

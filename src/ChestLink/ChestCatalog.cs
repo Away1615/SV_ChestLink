@@ -4,7 +4,10 @@ using StardewValley.Objects;
 
 namespace ChestLink;
 
-internal sealed record ChestSource(GameLocation Location, Vector2 Tile, Chest Chest);
+public enum StorageContainerKind { All, Chest, Fridge }
+
+internal sealed record ChestSource(GameLocation Location, Vector2 Tile, Chest Chest,
+    StorageContainerKind Kind);
 
 internal sealed record ItemSource(ChestSource Chest, int Slot, Item Item);
 
@@ -109,6 +112,20 @@ internal sealed class ChestCatalog
             ? candidates.Where(group => SameStack(group.Exemplar, item))
             : Enumerable.Empty<ItemGroup>();
 
+    internal IEnumerable<ItemSource> FindSources(Item item, StorageContainerKind kind) =>
+        FindGroups(item).SelectMany(group => group.Sources)
+            .Where(source => source.Chest.Matches(kind));
+
+    internal IEnumerable<(ItemGroup Group, int Count)> ViewGroups(StorageContainerKind kind) =>
+        Groups.Select(group => (Group: group, Count: kind == StorageContainerKind.All
+                ? group.Total
+                : group.Sources.Where(source => source.Chest.Matches(kind))
+                    .Sum(source => source.Item.Stack)))
+            .Where(entry => entry.Count > 0);
+
+    internal IEnumerable<ChestSource> ViewChests(StorageContainerKind kind) =>
+        Chests.Where(source => source.Matches(kind));
+
     internal IEnumerable<ChestSource> OrderChests(IEnumerable<ChestSource> sources) =>
         sources.Distinct().OrderBy(source => chestOrder[source]);
 
@@ -117,7 +134,8 @@ internal sealed class ChestCatalog
         var seen = new HashSet<Chest>(ReferenceEqualityComparer.Instance);
         foreach (var pair in location.Objects.Pairs)
             if (pair.Value is Chest chest && IsSupported(chest) && seen.Add(chest))
-                yield return new ChestSource(location, pair.Key, chest);
+                yield return new ChestSource(location, pair.Key, chest,
+                    chest.fridge.Value ? StorageContainerKind.Fridge : StorageContainerKind.Chest);
 
         // The farmhouse fridge is stored on the location, not in Objects.
         Chest? fridge = location.GetFridge();
@@ -127,7 +145,7 @@ internal sealed class ChestCatalog
             // An unavailable map position must not make the fridge appear near tile zero.
             Vector2 tile = position is { } point
                 ? new Vector2(point.X, point.Y) : new Vector2(-1000, -1000);
-            yield return new ChestSource(location, tile, fridge);
+            yield return new ChestSource(location, tile, fridge, StorageContainerKind.Fridge);
         }
     }
 
@@ -148,4 +166,10 @@ internal sealed class ChestCatalog
         ReferenceEquals(left, right) ||
         (left.QualifiedItemId == right.QualifiedItemId && left.Quality == right.Quality &&
          left.canStackWith(right) && right.canStackWith(left));
+}
+
+internal static class StorageContainerKindExtensions
+{
+    internal static bool Matches(this ChestSource source, StorageContainerKind kind) =>
+        kind == StorageContainerKind.All || source.Kind == kind;
 }
