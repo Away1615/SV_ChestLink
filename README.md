@@ -1,6 +1,8 @@
 # ChestLink
 
-**ChestLink** adds a placeable ancient storage terminal that lets you browse and transfer items across ordinary chests around the world. It also supports quick-storing from nearby terminals or chests, locked backpack items, multiplayer updates, and the game's current language.
+**ChestLink** 是一款《星露谷物语》（Stardew Valley）的 SMAPI Mod，通过可放置的古代仓储终端管理世界各处的普通箱子。
+
+**ChestLink** is a Stardew Valley mod for SMAPI. It adds a placeable ancient storage terminal that lets you browse and transfer items across ordinary chests around the world. It also supports quick-storing from nearby terminals or chests, locked backpack items, multiplayer updates, and the game's current language.
 
 ## 中文说明
 
