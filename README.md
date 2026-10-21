@@ -59,6 +59,14 @@ dotnet build src/ChestLink/ChestLink.csproj -c Release
 
 构建输出位于 `src/ChestLink/bin/Release/net6.0`。
 
+发布或更新本机安装时，使用以下脚本同步 DLL 与资源，并删除旧版残留的 `ChestLink.pdb`（发布包不需要调试符号）：
+
+```powershell
+.\scripts\Publish-Local.ps1 -ModsPath 'E:\SteamLibrary\steamapps\common\Stardew Valley\Mods'
+```
+
+只更新 `dist/ChestLink` 时，省略 `-ModsPath`。运行安装命令前请先关闭游戏。
+
 ## English
 
 ### Features
@@ -80,6 +88,8 @@ The **All containers / Chests / Fridges** tabs on the left combine with the item
 3. For multiplayer, all players should use the same mod version.
 
 The installable package in this repository is [`dist/ChestLink`](dist/ChestLink). Release packages may also be downloaded from Releases.
+
+For local publishing, run `scripts/Publish-Local.ps1` with `-ModsPath` set to your game's `Mods` folder. The script builds the mod, updates `dist/ChestLink` and the local installation, and removes any stale `ChestLink.pdb` from both folders. Omit `-ModsPath` to update only `dist/ChestLink`. Close the game before installing.
 
 ### Default controls
 
