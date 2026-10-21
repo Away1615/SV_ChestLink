@@ -147,7 +147,7 @@ internal sealed class StorageService(ModEntry mod)
         }
         Execute(model, catalog =>
         {
-            IReadOnlyList<ChestSource> nearby = mod.GetNearbyOrdinaryChests(Game1.player, catalog);
+            IReadOnlyList<ChestSource> nearby = mod.GetNearbySupportedChests(Game1.player, catalog);
             var transfers = new List<(ChestSource Chest, Item Item)>();
             int total = QuickStack(catalog, Game1.player, transfers,
                 allowedChests: nearby.Select(source => source.Chest).ToHashSet());
@@ -241,7 +241,7 @@ internal sealed class StorageService(ModEntry mod)
         try
         {
             bool terminalQuickStack = request.Action == "quick-stack" && mod.IsInAutoStoreRange(player);
-            bool chestQuickStack = request.Action == "quick-stack-nearby" && mod.IsNearOrdinaryChest(player);
+            bool chestQuickStack = request.Action == "quick-stack-nearby" && mod.IsNearSupportedChest(player);
             if (!mod.IsNearTerminal(player) && !terminalQuickStack && !chestQuickStack)
                 result.Status = mod.T("status.too-far");
             else
@@ -298,7 +298,7 @@ internal sealed class StorageService(ModEntry mod)
                         result.MovedCount = result.AcceptedCounts.Sum();
                         break;
                     case "quick-stack-nearby":
-                        var nearbyChests = mod.GetNearbyOrdinaryChests(player, catalog)
+                        var nearbyChests = mod.GetNearbySupportedChests(player, catalog)
                             .Select(source => source.Chest).ToHashSet();
                         result.AcceptedCounts = RemoteQuickStack(catalog, request, transfers, nearbyChests);
                         result.MovedCount = result.AcceptedCounts.Sum();
@@ -861,7 +861,7 @@ internal sealed class StorageService(ModEntry mod)
     private void Execute(StorageMenuModel? model, Func<ChestCatalog, string> operation,
         bool useAutoStoreRange = false, bool useNearbyChestRange = false)
     {
-        bool inRange = useNearbyChestRange ? mod.IsNearOrdinaryChest() :
+        bool inRange = useNearbyChestRange ? mod.IsNearSupportedChest() :
             useAutoStoreRange ? mod.IsInAutoStoreRange() : mod.IsNearTerminal();
         if (!inRange)
         {

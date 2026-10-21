@@ -39,6 +39,9 @@ internal static class QuickStackFlightAnimation
             Add(sprites, chest.Location, Create(data, start, landingStart, delay, flightMs));
             arrival = delay + flightMs;
             Add(sprites, chest.Location, CreateLanding(data, landingStart, end, arrival));
+            // The farmhouse fridge has a tile but no placed chest lid to animate.
+            if (!chest.Location.Objects.TryGetValue(chest.Tile, out var placed) ||
+                !ReferenceEquals(placed, chest.Chest)) continue;
             if (!chestTimings.TryGetValue(chest, out StoragePulseChest? timing))
             {
                 timing = new StoragePulseChest

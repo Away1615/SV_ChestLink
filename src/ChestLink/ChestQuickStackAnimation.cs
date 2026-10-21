@@ -37,7 +37,7 @@ internal static class ChestQuickStackAnimation
             }
             if (!location.Objects.TryGetValue(new Vector2(animation.Target.X,
                     animation.Target.Y), out var obj) ||
-                obj is not Chest chest || !ChestCatalog.IsOrdinary(chest))
+                obj is not Chest chest || !ChestCatalog.IsSupported(chest))
             {
                 Pending.RemoveAt(i);
                 continue;

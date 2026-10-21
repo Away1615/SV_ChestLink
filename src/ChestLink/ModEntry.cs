@@ -120,6 +120,7 @@ public sealed class ModEntry : Mod
 
     private void OnSaveLoaded(object? sender, SaveLoadedEventArgs e)
     {
+        storage?.NotifyChestObjectsChanged();
         if (Context.IsMainPlayer && TerminalContent.HasExistingTerminal())
             TerminalRecipeLimit.ReceiveCrafted();
         TeachRecipes();
@@ -146,7 +147,8 @@ public sealed class ModEntry : Mod
 
     private void OnChestInventoryChanged(object? sender, ChestInventoryChangedEventArgs e)
     {
-        if (Context.IsMainPlayer && ChestCatalog.IsOrdinary(e.Chest))
+        if (Context.IsMainPlayer &&
+            (ChestCatalog.IsSupported(e.Chest) || ReferenceEquals(e.Chest, e.Location.GetFridge())))
             storage?.NotifyChestInventoryChanged();
     }
 
@@ -155,7 +157,7 @@ public sealed class ModEntry : Mod
         if (!Context.IsMainPlayer) return;
         if (e.Added.Any(pair => pair.Value.QualifiedItemId == TerminalContent.QualifiedId))
             TerminalRecipeLimit.ReceiveCrafted();
-        if (e.Added.Concat(e.Removed).Any(pair => pair.Value is Chest chest && ChestCatalog.IsOrdinary(chest)))
+        if (e.Added.Concat(e.Removed).Any(pair => pair.Value is Chest chest && ChestCatalog.IsSupported(chest)))
             storage?.NotifyChestObjectsChanged();
     }
 
@@ -309,7 +311,7 @@ public sealed class ModEntry : Mod
         }
         if (Game1.activeClickableMenu is not null) return;
 
-        if (config.NearbyChestQuickStackKey.JustPressed() && IsNearOrdinaryChest())
+        if (config.NearbyChestQuickStackKey.JustPressed() && IsNearSupportedChest())
         {
             storage?.QuickStackNearChests(null);
             Helper.Input.Suppress(e.Button);
@@ -376,18 +378,17 @@ public sealed class ModEntry : Mod
 
     internal bool IsInAutoStoreRange(Farmer player) => IsNearTerminal(player, config.AutoStoreRange);
 
-    internal bool IsNearOrdinaryChest() => IsNearOrdinaryChest(Game1.player);
+    internal bool IsNearSupportedChest() => IsNearSupportedChest(Game1.player);
 
-    internal bool IsNearOrdinaryChest(Farmer player)
+    internal bool IsNearSupportedChest(Farmer player)
     {
         if (!Context.IsWorldReady || player.currentLocation is not { } location) return false;
         int range = Math.Clamp(config.AutoStoreRange, 1, 10);
-        return location.Objects.Pairs.Any(pair => pair.Value is StardewValley.Objects.Chest chest &&
-            ChestCatalog.IsOrdinary(chest) &&
-            Microsoft.Xna.Framework.Vector2.DistanceSquared(player.Tile, pair.Key) <= range * range);
+        return ChestCatalog.ReadLocation(location).Any(source =>
+            Microsoft.Xna.Framework.Vector2.DistanceSquared(player.Tile, source.Tile) <= range * range);
     }
 
-    internal IReadOnlyList<ChestSource> GetNearbyOrdinaryChests(Farmer player, ChestCatalog catalog)
+    internal IReadOnlyList<ChestSource> GetNearbySupportedChests(Farmer player, ChestCatalog catalog)
     {
         if (player.currentLocation is not { } location) return Array.Empty<ChestSource>();
         int range = Math.Clamp(config.AutoStoreRange, 1, 10);

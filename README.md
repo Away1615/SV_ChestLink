@@ -1,17 +1,17 @@
 # ChestLink
 
-**ChestLink** 是一款《星露谷物语》（Stardew Valley）的 SMAPI Mod，通过可放置的古代仓储终端管理世界各处的普通箱子。
+**ChestLink** 是一款《星露谷物语》（Stardew Valley）的 SMAPI Mod，通过可放置的古代仓储终端管理世界各处的箱子与冰箱。
 
-**ChestLink** is a Stardew Valley mod for SMAPI. It adds a placeable ancient storage terminal that lets you browse and transfer items across ordinary chests around the world. It also supports quick-storing from nearby terminals or chests, locked backpack items, multiplayer updates, and the game's current language.
+**ChestLink** is a Stardew Valley mod for SMAPI. It adds a placeable ancient storage terminal that lets you browse and transfer items across chests and fridges around the world. It also supports quick-storing from nearby terminals or chests, locked backpack items, multiplayer updates, and the game's current language.
 
 ## 中文说明
 
 ### 功能
 
-- 放置并右键使用古代仓储终端，可查看农场世界中普通木箱、石箱和大箱子的物品。
+- 放置并右键使用古代仓储终端，可查看农场世界中木箱、石箱、大箱子、迷你冰箱和房屋冰箱的物品。
 - 支持搜索、分类、分页、整理，以及整组、单件、半组和保留一件的取物操作。
 - 在终端附近按 **K**，可把背包物品存入已有相同物品堆叠的箱子。
-- 在普通箱子附近按 **L**，可把背包物品存入附近箱子中已有的相同物品堆叠。
+- 在支持的箱子或冰箱附近按 **L**，可把背包物品存入附近容器中已有的相同物品堆叠。
 - 锁定背包物品后，快捷存入会跳过它；锁图标也会显示在背包栏中。
 - 多人游戏中同步仓库操作和打开中的仓库界面。所有玩家都需要安装 ChestLink。
 - 界面文字和终端配方名称会跟随游戏语言；缺少翻译时使用英文。
@@ -41,7 +41,7 @@
 | 操作 | 默认键 | 默认范围 |
 | --- | --- | --- |
 | 终端附近快捷存入 | K | 距终端 5 格内 |
-| 普通箱子附近快捷存入 | L | 距普通箱子 5 格内 |
+| 箱子或冰箱附近快捷存入 | L | 距支持的容器 5 格内 |
 
 可在设置菜单中调整快捷键和快捷存入距离。设置界面需要可选依赖 [Generic Mod Config Menu](https://www.nexusmods.com/stardewvalley/mods/5098)；不安装时仍可使用默认键位。
 
@@ -61,10 +61,10 @@ dotnet build src/ChestLink/ChestLink.csproj -c Release
 
 ### Features
 
-- Place and right-click the Ancient Storage Terminal to browse ordinary wooden, stone, and large chests across the world.
+- Place and right-click the Ancient Storage Terminal to browse wooden, stone, and large chests, mini-fridges, and farmhouse fridges across the world.
 - Search, filter by category, page through items, organize storage, and withdraw full stacks, one item, half a stack, or all but one.
 - Press **K** near a terminal to store backpack items in chests that already contain a matching stack.
-- Press **L** near an ordinary chest to quick-store items into matching stacks in nearby chests.
+- Press **L** near a supported chest or fridge to quick-store items into matching stacks in nearby containers.
 - Lock backpack items to skip them during quick storage. Lock icons also appear in the toolbar.
 - Multiplayer storage actions and open storage views are synchronized. Every player should install ChestLink.
 - The mod follows the game's language for its UI and recipe name, with English as the fallback.
@@ -94,7 +94,7 @@ Other shortcuts:
 | Action | Default key | Default range |
 | --- | --- | --- |
 | Quick-store near a terminal | K | Within 5 tiles of a terminal |
-| Quick-store near ordinary chests | L | Within 5 tiles of an ordinary chest |
+| Quick-store near chests or fridges | L | Within 5 tiles of a supported container |
 
 Shortcuts and quick-store range can be changed in the settings menu. The settings UI requires the optional [Generic Mod Config Menu](https://www.nexusmods.com/stardewvalley/mods/5098); default controls still work without it.
 

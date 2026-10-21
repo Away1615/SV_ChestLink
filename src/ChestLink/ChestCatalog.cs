@@ -65,13 +65,7 @@ internal sealed class ChestCatalog
 
         var chests = new List<ChestSource>();
         foreach (GameLocation location in locations)
-        {
-            foreach (var pair in location.Objects.Pairs)
-            {
-                if (pair.Value is Chest chest && IsOrdinary(chest))
-                    chests.Add(new ChestSource(location, pair.Key, chest));
-            }
-        }
+            chests.AddRange(ReadLocation(location));
         chests.Sort((a, b) =>
         {
             int value = StringComparer.Ordinal.Compare(a.Location.NameOrUniqueName,
@@ -118,13 +112,37 @@ internal sealed class ChestCatalog
     internal IEnumerable<ChestSource> OrderChests(IEnumerable<ChestSource> sources) =>
         sources.Distinct().OrderBy(source => chestOrder[source]);
 
-    internal static bool IsOrdinary(Chest chest)
+    internal static IEnumerable<ChestSource> ReadLocation(GameLocation location)
     {
-        if (chest.SpecialChestType != Chest.SpecialChestTypes.None || !chest.playerChest.Value ||
+        var seen = new HashSet<Chest>(ReferenceEqualityComparer.Instance);
+        foreach (var pair in location.Objects.Pairs)
+            if (pair.Value is Chest chest && IsSupported(chest) && seen.Add(chest))
+                yield return new ChestSource(location, pair.Key, chest);
+
+        // The farmhouse fridge is stored on the location, not in Objects.
+        Chest? fridge = location.GetFridge();
+        if (fridge is not null && IsSupportedFridge(fridge) && seen.Add(fridge))
+        {
+            Point? position = location.GetFridgePosition();
+            // An unavailable map position must not make the fridge appear near tile zero.
+            Vector2 tile = position is { } point
+                ? new Vector2(point.X, point.Y) : new Vector2(-1000, -1000);
+            yield return new ChestSource(location, tile, fridge);
+        }
+    }
+
+    internal static bool IsSupported(Chest chest)
+    {
+        if (chest.SpecialChestType is not (Chest.SpecialChestTypes.None or Chest.SpecialChestTypes.BigChest) ||
+            (!chest.playerChest.Value && !chest.fridge.Value) ||
             chest.giftbox.Value || !string.IsNullOrEmpty(chest.GlobalInventoryId))
             return false;
-        return chest.QualifiedItemId is "(BC)130" or "(BC)232" or "(BC)BigChest" or "(BC)BigStoneChest";
+        return true;
     }
+
+    private static bool IsSupportedFridge(Chest chest) =>
+        chest.SpecialChestType == Chest.SpecialChestTypes.None &&
+        !chest.giftbox.Value && string.IsNullOrEmpty(chest.GlobalInventoryId);
 
     internal static bool SameStack(Item left, Item right) =>
         ReferenceEquals(left, right) ||
