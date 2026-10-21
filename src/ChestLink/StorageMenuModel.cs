@@ -53,7 +53,7 @@ public sealed class StorageMenuModel : INotifyPropertyChanged
             pair.Item2.Length > 0 ? ItemRegistry.GetData(pair.Item2) : null)).ToList();
         Containers = new[]
         {
-            (StorageContainerKind.All, ""),
+            (StorageContainerKind.All, TerminalContent.QualifiedId),
             (StorageContainerKind.Chest, "(BC)130"),
             (StorageContainerKind.Fridge, "(BC)216")
         }.Select(pair => new ContainerTab(this, pair.Item1,

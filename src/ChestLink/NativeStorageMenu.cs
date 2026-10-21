@@ -564,19 +564,12 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
     private void DrawContainerTab(SpriteBatch b, int index, bool selected)
     {
         Rectangle bounds = ContainerTabBounds(index, selected);
-        b.Draw(Game1.mouseCursors, new Vector2(bounds.X, bounds.Y),
+        // The vanilla tab sprite opens at its bottom; rotate it so the opening
+        // joins the storage panel on the right.
+        b.Draw(Game1.mouseCursors, new Vector2(bounds.X, bounds.Bottom),
             new Rectangle(16, 368, 16, 16), Color.White,
-            0f, Vector2.Zero, 4f, SpriteEffects.None, 0f);
-        if (model.Containers[index].Kind == StorageContainerKind.All)
-        {
-            DrawContainerIcon(b, model.Containers[1].Icon,
-                new Rectangle(bounds.X + 6, bounds.Y + 7, 34, 34));
-            if (!DrawContainerIcon(b, model.Containers[2].Icon,
-                new Rectangle(bounds.X + 26, bounds.Y + 26, 34, 34)))
-                DrawContainerLabel(b, model.Containers[2].Name,
-                    new Rectangle(bounds.X + 26, bounds.Y + 26, 34, 34));
-        }
-        else if (!DrawContainerIcon(b, model.Containers[index].Icon,
+            -MathHelper.PiOver2, Vector2.Zero, 4f, SpriteEffects.None, 0f);
+        if (!DrawContainerIcon(b, model.Containers[index].Icon,
             new Rectangle(bounds.X + 10, bounds.Y + 10, 44, 44)))
             DrawContainerLabel(b, model.Containers[index].Name,
                 new Rectangle(bounds.X + 10, bounds.Y + 10, 44, 44));
