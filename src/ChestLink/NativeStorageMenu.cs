@@ -17,7 +17,8 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
     private const int TabWidth = 64;
     private const int TabHeight = 64;
     private const int TabStep = 60;
-    private const int SelectedTabShift = 8;
+    private const int TabIconSize = 48;
+    private const int SelectedTabShift = 4;
     private const int SideButtonGap = 16;
     private const int SearchRowInset = 36;
 
@@ -553,7 +554,8 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
         if (icon is not null)
         {
             Rectangle source = icon.GetSourceRect();
-            float scale = Math.Min(43f / source.Width, 43f / source.Height);
+            float scale = Math.Min((float)TabIconSize / source.Width,
+                (float)TabIconSize / source.Height);
             int iconWidth = (int)Math.Round(source.Width * scale);
             int iconHeight = (int)Math.Round(source.Height * scale);
             b.Draw(icon.GetTexture(), new Rectangle(bounds.Center.X - iconWidth / 2,
@@ -569,10 +571,11 @@ internal sealed class NativeStorageMenu : ItemGrabMenu
         b.Draw(Game1.mouseCursors, new Vector2(bounds.X, bounds.Bottom),
             new Rectangle(16, 368, 16, 16), Color.White,
             -MathHelper.PiOver2, Vector2.Zero, 4f, SpriteEffects.None, 0f);
-        if (!DrawContainerIcon(b, model.Containers[index].Icon,
-            new Rectangle(bounds.X + 10, bounds.Y + 10, 44, 44)))
+        Rectangle iconArea = new(bounds.X + (TabWidth - TabIconSize) / 2,
+            bounds.Y + (TabHeight - TabIconSize) / 2, TabIconSize, TabIconSize);
+        if (!DrawContainerIcon(b, model.Containers[index].Icon, iconArea))
             DrawContainerLabel(b, model.Containers[index].Name,
-                new Rectangle(bounds.X + 10, bounds.Y + 10, 44, 44));
+                iconArea);
     }
 
     private static bool DrawContainerIcon(SpriteBatch b,
