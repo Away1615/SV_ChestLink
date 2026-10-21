@@ -1,0 +1,16 @@
+{
+  "Name": "ChestLink",
+  "Author": "ZeroAlex",
+  "Version": "0.4.62",
+  "Description": "A shared view of ordinary chests through a vanilla-style storage terminal.",
+  "UniqueID": "Nooobad.ChestLink",
+  "EntryDll": "ChestLink.dll",
+  "MinimumApiVersion": "4.0.0",
+  "Dependencies": [
+    {
+      "UniqueID": "spacechase0.GenericModConfigMenu",
+      "MinimumVersion": "1.16.0",
+      "IsRequired": false
+    }
+  ]
+}
