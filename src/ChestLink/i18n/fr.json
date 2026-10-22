@@ -1,4 +1,5 @@
 {
+  "mod.description": "Consultez et transférez des objets entre coffres et réfrigérateurs grâce à un ancien terminal de stockage.",
   "terminal.name": "Terminal de stockage ancien",
   "terminal.description": "Un mystérieux relais ancien qui semble se connecter directement aux coffres à proximité.",
   "config.shortcuts.title": "Actions - raccourcis attribués",

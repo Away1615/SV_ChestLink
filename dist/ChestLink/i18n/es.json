@@ -1,4 +1,5 @@
 {
+  "mod.description": "Consulta y mueve objetos entre cofres y neveras con un antiguo terminal de almacenamiento.",
   "terminal.name": "Terminal de almacenamiento antiguo",
   "terminal.description": "Un misterioso núcleo antiguo que parece conectarse directamente con los cofres cercanos.",
   "config.shortcuts.title": "Acciones - teclas asignadas",

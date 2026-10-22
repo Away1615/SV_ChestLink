@@ -1,8 +1,8 @@
 {
   "Name": "ChestLink",
   "Author": "ZeroAlex",
-  "Version": "0.4.66",
-  "Description": "A shared view of chests and fridges through a vanilla-style storage terminal.",
+  "Version": "0.4.67",
+  "Description": "Browse and transfer items across chests and fridges using an ancient storage terminal.",
   "UniqueID": "Nooobad.ChestLink",
   "EntryDll": "ChestLink.dll",
   "MinimumApiVersion": "4.0.0",

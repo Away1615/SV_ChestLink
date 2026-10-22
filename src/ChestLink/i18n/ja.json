@@ -1,4 +1,5 @@
 {
+  "mod.description": "古代の収納端末で各地のチェストや冷蔵庫のアイテムを確認・移動できます。",
   "terminal.name": "古代の保管ターミナル",
   "terminal.description": "近くのチェストに直接つながるらしい、謎めいた古代のハブ。",
   "config.shortcuts.title": "操作 - 割り当てキー",

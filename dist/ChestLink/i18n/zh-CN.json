@@ -1,4 +1,5 @@
 {
+  "mod.description": "使用古代仓储终端查看和转移各处箱子与冰箱中的物品。",
   "terminal.name": "古代仓储终端",
   "terminal.description": "神秘的古代枢纽，似乎可以直接连接附近的箱子。",
   "config.shortcuts.title": "操作 - 绑定的快捷键",

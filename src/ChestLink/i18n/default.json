@@ -1,4 +1,5 @@
 {
+  "mod.description": "Browse and transfer items across chests and fridges using an ancient storage terminal.",
   "terminal.name": "Ancient Storage Terminal",
   "terminal.description": "A mysterious ancient hub that seems to connect directly to nearby chests.",
   "config.shortcuts.title": "Action - bound shortcut",

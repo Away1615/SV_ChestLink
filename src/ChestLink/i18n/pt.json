@@ -1,4 +1,5 @@
 {
+  "mod.description": "Veja e transfira itens entre baús e geladeiras usando um antigo terminal de armazenamento.",
   "terminal.name": "Terminal de armazenamento antigo",
   "terminal.description": "Um misterioso núcleo antigo que parece se conectar diretamente aos baús próximos.",
   "config.shortcuts.title": "Ações - atalhos atribuídos",

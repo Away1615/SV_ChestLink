@@ -1,4 +1,5 @@
 {
+  "mod.description": "Durchsuche Truhen und Kühlschränke und verschiebe Gegenstände über ein antikes Lagerterminal.",
   "terminal.name": "Antikes Lagerterminal",
   "terminal.description": "Ein geheimnisvoller antiker Knotenpunkt, der direkt mit nahegelegenen Truhen verbunden zu sein scheint.",
   "config.shortcuts.title": "Aktionen – Tastenkürzel",

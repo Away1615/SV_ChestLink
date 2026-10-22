@@ -1,4 +1,5 @@
 {
+  "mod.description": "Ősi raktárterminállal böngészheted és áthelyezheted a ládákban és hűtőkben tárolt tárgyakat.",
   "terminal.name": "Ősi tárolóterminál",
   "terminal.description": "Titokzatos ősi csomópont, amely mintha közvetlenül kapcsolódna a közeli ládákhoz.",
   "config.shortcuts.title": "Műveletek – hozzárendelt billentyűk",

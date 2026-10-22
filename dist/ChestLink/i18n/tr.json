@@ -1,4 +1,5 @@
 {
+  "mod.description": "Kadim bir depolama terminaliyle sandık ve buzdolaplarındaki eşyaları görüntüleyip taşıyın.",
   "terminal.name": "Kadim Depolama Terminali",
   "terminal.description": "Yakındaki sandıklara doğrudan bağlanıyor gibi görünen gizemli bir kadim merkez.",
   "config.shortcuts.title": "Eylemler - atanmış kısayollar",

@@ -1,4 +1,5 @@
 {
+  "mod.description": "고대 보관 단말기로 여러 상자와 냉장고의 물건을 확인하고 옮길 수 있습니다.",
   "terminal.name": "고대 저장 터미널",
   "terminal.description": "근처 상자와 직접 연결되는 듯한 신비한 고대 허브입니다.",
   "config.shortcuts.title": "동작 - 지정된 단축키",

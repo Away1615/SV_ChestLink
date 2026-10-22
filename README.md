@@ -4,6 +4,27 @@
 
 **ChestLink** is a Stardew Valley mod for SMAPI. It adds a placeable ancient storage terminal that lets you browse and transfer items across chests and fridges around the world. It also supports quick-storing from nearby terminals or chests, locked backpack items, multiplayer updates, and the game's current language.
 
+## 模组简介 / Mod descriptions
+
+| 语言 / Language | 简介 / Description |
+| --- | --- |
+| English | Browse and transfer items across chests and fridges using an ancient storage terminal. |
+| Deutsch | Durchsuche Truhen und Kühlschränke und verschiebe Gegenstände über ein antikes Lagerterminal. |
+| Español | Consulta y mueve objetos entre cofres y neveras con un antiguo terminal de almacenamiento. |
+| Français | Consultez et transférez des objets entre coffres et réfrigérateurs grâce à un ancien terminal de stockage. |
+| Magyar | Ősi raktárterminállal böngészheted és áthelyezheted a ládákban és hűtőkben tárolt tárgyakat. |
+| Italiano | Consulta e trasferisci oggetti tra bauli e frigoriferi con un antico terminale di deposito. |
+| 日本語 | 古代の収納端末で各地のチェストや冷蔵庫のアイテムを確認・移動できます。 |
+| 한국어 | 고대 보관 단말기로 여러 상자와 냉장고의 물건을 확인하고 옮길 수 있습니다. |
+| Português (Brasil) | Veja e transfira itens entre baús e geladeiras usando um antigo terminal de armazenamento. |
+| Русский | Просматривайте и переносите предметы между сундуками и холодильниками через древний складской терминал. |
+| Türkçe | Kadim bir depolama terminaliyle sandık ve buzdolaplarındaki eşyaları görüntüleyip taşıyın. |
+| 简体中文 | 使用古代仓储终端查看和转移各处箱子与冰箱中的物品。 |
+
+游戏内文字自动跟随游戏语言。SMAPI 的 `manifest.json` 描述在启动时读取，不能自动切换；发布脚本可指定 `-ManifestLocale` 为本机安装写入所选语言的描述。仓库中的默认发布包使用英文描述。
+
+In-game text follows the game language automatically. SMAPI reads the manifest description at startup, so use `-ManifestLocale` when publishing a local install. The default release package keeps the English description.
+
 ## 中文说明
 
 ### 功能
@@ -62,10 +83,10 @@ dotnet build src/ChestLink/ChestLink.csproj -c Release
 发布或更新本机安装时，使用以下脚本同步 DLL 与资源，并删除旧版残留的 `ChestLink.pdb`（发布包不需要调试符号）：
 
 ```powershell
-.\scripts\Publish-Local.ps1 -ModsPath 'E:\SteamLibrary\steamapps\common\Stardew Valley\Mods'
+.\scripts\Publish-Local.ps1 -ModsPath 'E:\SteamLibrary\steamapps\common\Stardew Valley\Mods' -ManifestLocale zh-CN
 ```
 
-只更新 `dist/ChestLink` 时，省略 `-ModsPath`。运行安装命令前请先关闭游戏。
+只更新 `dist/ChestLink` 时，省略 `-ModsPath`。`-ManifestLocale` 可使用 `i18n` 文件名（不含 `.json`），例如 `de`、`ja`、`pt-BR`、`zh-CN`。运行安装命令前请先关闭游戏。
 
 ## English
 
@@ -89,7 +110,7 @@ The **All containers / Chests / Fridges** tabs on the left combine with the item
 
 The installable package in this repository is [`dist/ChestLink`](dist/ChestLink). Release packages may also be downloaded from Releases.
 
-For local publishing, run `scripts/Publish-Local.ps1` with `-ModsPath` set to your game's `Mods` folder. The script builds the mod, updates `dist/ChestLink` and the local installation, and removes any stale `ChestLink.pdb` from both folders. Omit `-ModsPath` to update only `dist/ChestLink`. Close the game before installing.
+For local publishing, run `scripts/Publish-Local.ps1` with `-ModsPath` set to your game's `Mods` folder and `-ManifestLocale` set to an `i18n` filename without `.json` (for example `de`, `ja`, or `zh-CN`). The script builds the mod, updates `dist/ChestLink` and the local installation, and removes any stale `ChestLink.pdb` from both folders. Omit `-ModsPath` to update only `dist/ChestLink`. Close the game before installing.
 
 ### Default controls
 

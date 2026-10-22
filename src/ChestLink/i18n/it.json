@@ -1,4 +1,5 @@
 {
+  "mod.description": "Consulta e trasferisci oggetti tra bauli e frigoriferi con un antico terminale di deposito.",
   "terminal.name": "Terminale di stoccaggio antico",
   "terminal.description": "Un misterioso snodo antico che sembra collegarsi direttamente ai bauli vicini.",
   "config.shortcuts.title": "Azioni - tasti assegnati",
